@@ -2,8 +2,30 @@
 .env
 .git
 .gitignore
+.gitattributes
+.github
 .vs
 .vscode
-*/bin
-*/obj
+.devcontainer
+.editorconfig
+**/bin
+**/obj
 **/.toolstarget
+
+tests
+
+infra
+azure.yaml
+azure-pipelines.yml
+azure-pipelines-1.yml
+azure-pipelines-2.yml
+
+# Ships a hard-coded SQL Server password; the connection strings are injected
+# as environment variables at run time instead.
+src/Web/appsettings.Docker.json
+
+**/Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+docker-compose.dcproj
+*.md
