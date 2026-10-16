@@ -1,25 +1,94 @@
-version: '3.4'
+
+version: "3.8"
 
 services:
   eshopwebmvc:
-    image: ${DOCKER_REGISTRY-}eshopwebmvc
+    image: cloudshirt:${TAG:-latest}
     build:
       context: .
       dockerfile: src/Web/Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__CatalogConnection: "Server=sqlserver,1433;Initial Catalog=Microsoft.eShopOnWeb.CatalogDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;TrustServerCertificate=True;"
+      ConnectionStrings__IdentityConnection: "Server=sqlserver,1433;Initial Catalog=Microsoft.eShopOnWeb.Identity;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
     depends_on:
-      - "sqlserver"
+      sqlserver:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
   eshoppublicapi:
-    image: ${DOCKER_REGISTRY-}eshoppublicapi
+    image: cloudshirt-api:${TAG:-latest}
     build:
       context: .
       dockerfile: src/PublicApi/Dockerfile
+    ports:
+      - "8081:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__CatalogConnection: "Server=sqlserver,1433;Initial Catalog=Microsoft.eShopOnWeb.CatalogDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
     depends_on:
-      - "sqlserver"
+      sqlserver:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
   sqlserver:
     image: mcr.microsoft.com/azure-sql-edge
     ports:
       - "1433:1433"
     environment:
-      - SA_PASSWORD=@someThingComplicated1234
-      - ACCEPT_EULA=Y
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${SA_PASSWORD:?Set SA_PASSWORD in your environment}"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          /opt/mssql-tools/bin/sqlcmd
+          -S localhost -U sa -P "$$SA_PASSWORD"
+          -Q "SELECT 1" -b
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 2G
 
+volumes:
+  sqlserver-data:
