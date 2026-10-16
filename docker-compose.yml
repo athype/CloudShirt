@@ -1,6 +1,3 @@
-
-version: "3.8"
-
 services:
   eshopwebmvc:
     image: cloudshirt:${TAG:-latest}
@@ -14,6 +11,7 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       ConnectionStrings__CatalogConnection: "Server=sqlserver,1433;Initial Catalog=Microsoft.eShopOnWeb.CatalogDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
       ConnectionStrings__IdentityConnection: "Server=sqlserver,1433;Initial Catalog=Microsoft.eShopOnWeb.Identity;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+      BaseUrls__ApiBase: "http://eshoppublicapi:8080/api/"
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -22,7 +20,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "bash -c 'echo > /dev/tcp/127.0.0.1/1433'"
+          "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"
         ]
       interval: 30s
       timeout: 10s
@@ -55,7 +53,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "bash -c 'echo > /dev/tcp/127.0.0.1/1433'"
+          "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"
         ]
       interval: 30s
       timeout: 10s
